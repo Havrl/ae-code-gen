@@ -1,0 +1,31 @@
+<div ngbDropdown #dd (openChange)="onDropDownChange($event)" container="body">
+  <button class="btn btn-outline-primary dropdown-toggle" id="dropdownDatePicker1" ngbDropdownToggle>
+    <i class="fa fa-calendar"></i> {{ dropDownPlaceholder }}
+  </button>
+  <div ngbDropdownMenu aria-labelledby="dropdownDatePicker1" class="p-0">
+    <div class="d-inline-block float-left">
+      <ngb-datepicker class="ae-range-datepicker" #dp (dateSelect)="onDateSelection($event)" [displayMonths]="2"
+        [dayTemplate]="t" outsideDays="hidden">
+      </ngb-datepicker>
+    </div>
+    <div class="ranges d-inline-block float-right pt-2">
+      <ul class="dropdown-list">
+        <li class="dropdown-item" *ngFor="let r of ranges; index as i">
+          <a href="javascript:;" (click)="onRangeBtnClick(i)">{{ r.text }}</a>
+        </li>
+      </ul>
+      <div class="range_inputs text-center">
+        <button class="btn btn-sm btn-success mr-1" type="button" (click)="apply()">Apply</button>
+        <button class="btn btn-sm btn-outline-primary" type="button" (click)="clear()">Clear</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<ng-template #t let-date let-focused="focused">
+  <span class="custom-day" [class.focused]="focused" [class.range]="isRange(date)"
+    [class.faded]="isHovered(date) || isInside(date)" (mouseenter)="hoveredDate = date"
+    (mouseleave)="hoveredDate = null">
+    {{ date.day }}
+  </span>
+</ng-template>

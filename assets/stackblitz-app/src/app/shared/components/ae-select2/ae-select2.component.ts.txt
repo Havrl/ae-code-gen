@@ -1,0 +1,780 @@
+import { Logger, LogLevel } from "../../../core/services/logger.service";
+import {
+  AeSelect2AjaxOptions,
+  AeSelect2ItemOptions,
+  AeSelect2DisabledOption,
+  AeSelect2DisableFn,
+  AeSelect2CustomAdapter,
+  Select2OptionData
+} from "./ae-select2.interface";
+/*
+
+ * Customized implementation based on
+    https://github.com/tealpartners/ng-select2
+    https://github.com/NejcZdovc/ng2-select2
+ *
+ * This version will maintain the previous value in this condition and will not
+ * fire the valueChanged event.
+ * If the old value is no longer available in the new data then it will behave the
+ * same as the standard component and reset the value and fire the event.
+ *
+ * The change is limited to the area of code using oldValueStillAvailable
+ */
+
+import {
+  AfterViewInit,
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  OnChanges,
+  OnDestroy,
+  Output,
+  SimpleChanges,
+  ViewChild,
+  OnInit,
+  Renderer2,
+  forwardRef,
+  DoCheck,
+  Attribute
+} from "@angular/core";
+import { Router } from "@angular/router";
+import { uniqueId } from "../../../core/utils/common.utils";
+import { ControlValueAccessor, NG_VALUE_ACCESSOR } from "@angular/forms";
+
+import $ from "jquery";
+
+const log = new Logger("AeSelect2Component", LogLevel.Debug);
+
+const noop = () => {};
+
+@Component({
+  selector: "ae-select2",
+  template: `
+    <select #selector>
+      <ng-content select="option, optgroup"> </ng-content>
+    </select>
+  `,
+  providers: [
+    {
+      provide: NG_VALUE_ACCESSOR,
+      useExisting: forwardRef(() => AeSelect2Component),
+      multi: true
+    }
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush
+})
+export class AeSelect2Component
+  implements
+    AfterViewInit,
+    OnChanges,
+    OnInit,
+    OnDestroy,
+    DoCheck,
+    ControlValueAccessor {
+  @ViewChild("selector", { static: true }) selector: ElementRef;
+
+  @Input() id: string = uniqueId();
+
+  // data for select2 drop down
+  @Input() data: Array<any>;
+
+  // value for select2
+  @Input() value: string | string[] | object;
+
+  // width of select2 input
+  @Input() width: string;
+
+  // value for placeholder
+  // note it can be passed within options
+  // but this allows updating the placeholder on the fly
+  // without re-init
+  @Input() placeholder: string;
+
+  // enable / disable select2
+  @Input() disabled: boolean = false;
+
+  @Input() ajaxOptions: AeSelect2AjaxOptions;
+  @Input() itemOptions: AeSelect2ItemOptions;
+  // all additional options
+  @Input() options: Select2Options;
+
+  @Input() customAdapters: Array<AeSelect2CustomAdapter>;
+
+  @Input() valueType: "string" | "object" = "string";
+
+  // allows to prevent selecting or opening the drop-down
+  // until user confirms that
+  // if confirmMode is 'select' (by default) then user selection is done after confirmation
+  // if confirmMode is 'open' then drop-down is not open until confirmed
+  @Input() confirmOnChange: boolean;
+  @Input() isConfirmed: boolean;
+  @Output() confirmAction = new EventEmitter();
+  private selectionOnHold: any;
+
+  // emitter when value is changed
+  @Output() valueChanged = new EventEmitter();
+
+  element: JQuery = undefined;
+  private check: boolean = false;
+  private _ajaxOptions: AeSelect2AjaxOptions;
+  private _itemOptions: AeSelect2ItemOptions;
+
+  propagateChange: (_: any) => void = noop;
+  propagateTouch: () => void = noop;
+
+  constructor(
+    @Attribute("container") public container: string, // holds value for dropDownParent option
+    @Attribute("confirmMode") public confirmMode: string = "select", // 'select' or 'open'
+    private renderer: Renderer2,
+    private router: Router
+  ) {
+    // set default config
+    this._ajaxOptions = {
+      url: "",
+      items: "Items", // mapping the collection name
+      total: "TotalItems", // mapping the total field
+      pageSize: 500,
+      cache: true,
+      paramsMap: { Search: "Search" } // allows remapping Search param
+    };
+    this._itemOptions = {
+      id: "Id", // id map
+      text: "Text", // text map
+      disabledOption: null, // disabled is not used by default
+      additionalProps: [], // holds the list of additional field names
+      hideDisabledItem: false // disabled items are disabled and visible
+    };
+  }
+
+  ngDoCheck() {
+    if (!this.element) {
+      return;
+    }
+  }
+
+  ngOnInit() {}
+
+  async ngOnChanges(changes: SimpleChanges) {
+    if (!this.element) {
+      log.debug("ngOnChanges -> element not ready");
+      return;
+    }
+
+    log.debug(`${this.id} ngOnChanges`, changes);
+
+    // data is about setting options to select2, which would trigger initialisation
+    if (
+      changes["data"] &&
+      JSON.stringify(changes["data"].previousValue) !==
+        JSON.stringify(changes["data"].currentValue)
+    ) {
+      log.debug("ngOnChanges -> changes[data]");
+      const currentValue: any = this.value;
+
+      await this.initPlugin();
+
+      // If the new data still has the old value then simply
+      // select it and do not fire the valueChanged event
+      let oldValueStillAvailable: boolean = false;
+      for (let option of this.selector.nativeElement.options) {
+        if (option.value === currentValue) {
+          oldValueStillAvailable = true;
+          break;
+        }
+      }
+
+      this.setElementValue(currentValue);
+
+      if (!oldValueStillAvailable) {
+        this.valueChanged.emit(currentValue);
+        this.propagateChange(currentValue);
+      }
+    }
+
+    if (
+      changes["value"] &&
+      changes["value"].previousValue !== changes["value"].currentValue
+    ) {
+      const newValue: any = changes["value"].currentValue;
+
+      log.debug("ngOnChanges -> changes[value]", newValue);
+
+      this.getItem(newValue, (val: any) => {
+        log.debug("getItem done callback", newValue, val);
+        this.setElementValue(val);
+
+        // Disabling valueChanged event
+        // to avoid it to be triggered each time change detection runs
+        // Note: if that is required then we can introduce some switch
+        // to turn it on / off.
+      });
+    }
+
+    if (
+      changes["placeholder"] &&
+      changes["placeholder"].previousValue !==
+        changes["placeholder"].currentValue
+    ) {
+      this.element
+        .data("select2")
+        .$container.find(".select2-selection__placeholder")
+        .text(this.placeholder);
+    }
+
+    if (
+      changes["disabled"] &&
+      changes["disabled"].previousValue !== changes["disabled"].currentValue
+    ) {
+      this.renderer.setProperty(
+        this.selector.nativeElement,
+        "disabled",
+        this.disabled
+      );
+    }
+
+    if (
+      changes["confirmOnChange"] &&
+      changes["confirmOnChange"].previousValue !==
+        changes["confirmOnChange"].currentValue &&
+      changes["confirmOnChange"].currentValue
+    ) {
+      this.subscribeOnChange();
+    }
+
+    if (changes["isConfirmed"] && changes["isConfirmed"].currentValue) {
+      log.debug("ngOnChanges -> changes[isConfirmed]", changes["isConfirmed"]);
+
+      if (this.confirmMode === "open") {
+        this.element.select2("open");
+      } else {
+        // if the confirm modal called manually (e.g. outside ae-select2),
+        // then selectionOnHold will not be available
+        if (!this.selectionOnHold) {
+          return;
+        }
+
+        let selection = this.selectionOnHold.id;
+        if (this.valueType === "object") {
+          selection = this.mapToServerItem(
+            this.selectionOnHold,
+            this.itemOptions
+          );
+        }
+
+        log.debug("triggering change", selection);
+        this.setElementValue(selection);
+        this.valueChanged.emit(selection);
+        this.propagateChange(selection);
+      }
+    }
+  }
+
+  async ngAfterViewInit() {
+    log.debug("ngAfterViewInit called");
+
+    this.element = $(this.selector.nativeElement);
+
+    await this.initPlugin();
+
+    // subscribe to onValueChange only after value assigned to element
+    if (typeof this.value != null) {
+      log.debug("ngAfterViewInit -> this.value", this.value);
+      this.getItem(this.value, (val: any) => {
+        log.debug("ngAfterViewInit -> getItem callback", val);
+        this.setElementValue(val);
+        this.subscribeOnValueChange();
+      });
+    } else {
+      log.debug("ngAfterViewInit -> subscribeOnValueChange");
+      this.subscribeOnValueChange();
+    }
+
+    if (this.confirmOnChange) {
+      this.subscribeOnChange();
+    }
+  }
+
+  ngOnDestroy() {
+    if (this.element) {
+      this.element.off("select2:select");
+      this.element.off("select2:opening");
+      this.element.off("select2:selecting");
+    }
+  }
+
+  private async initPlugin() {
+    log.debug("initPlugin called");
+    if (!this.element.select2) {
+      if (!this.check) {
+        this.check = true;
+        log.verbose(
+          "Please add Select2 library (js file) to the project. You can download it from https://github.com/select2/select2/tree/master/dist/js."
+        );
+      }
+
+      return;
+    }
+
+    // If select2 already initialized remove him and remove all tags inside
+    if (this.element.hasClass("select2-hidden-accessible") == true) {
+      log.debug("initPlugin -> already initialised, so destroying it now");
+      this.element.select2("destroy");
+      this.renderer.setProperty(this.selector.nativeElement, "innerHTML", "");
+    }
+
+    let options: Select2Options = {
+      data: this.data,
+      width: this.width ? this.width : "resolve"
+    };
+
+    if (this.placeholder != null) {
+      options.placeholder = this.placeholder;
+    }
+
+    if (this.container) {
+      options.dropdownParent = $(this.container);
+    }
+
+    Object.assign(options, this.options);
+    Object.assign(this._ajaxOptions, this.ajaxOptions);
+    Object.assign(this._itemOptions, this.itemOptions);
+
+    // check if componet is used as ajax
+    if (this.ajaxOptions) {
+      options.ajax = this.setAjaxOptions(this._ajaxOptions, this._itemOptions);
+
+      // also pass instance id, which will be available
+      // in transport function
+      // can be used to identify row number
+      options.ajax["aeSelect2Id"] = this.id;
+    }
+
+    // check for the custom adapters
+    if (this.customAdapters && this.customAdapters.length > 0) {
+      this.customAdapters.forEach(
+        adapter => (options[adapter.decorator] = adapter.adapterFn())
+      );
+    }
+
+    // check if there is a need for data array mapping
+    if (options.data && options.data.length > 0 && this.itemOptions) {
+      options.data = this.mapData(options.data, this.itemOptions);
+    }
+
+    console.log("initPlugin", this.element);
+    this.element.select2(options);
+
+    if (this.disabled) {
+      this.renderer.setProperty(
+        this.selector.nativeElement,
+        "disabled",
+        this.disabled
+      );
+    }
+  }
+
+  private subscribeOnChange() {
+    this.confirmMode === "open"
+      ? this.subscribeOnOpening()
+      : this.subscribeOnSelecting();
+  }
+
+  private subscribeOnOpening() {
+    // make sure it's not already subscribed
+    this.element.off("select2:opening");
+    this.element.on("select2:opening", (event: any) => {
+      if (this.confirmOnChange && !this.isConfirmed) {
+        this.confirmAction.emit();
+        event.stopImmediatePropagation();
+        return false;
+      }
+    });
+  }
+
+  private subscribeOnSelecting() {
+    this.element.off("select2:selecting");
+    this.element.on("select2:selecting", (event: any) => {
+      if (this.confirmOnChange && !this.isConfirmed) {
+        this.selectionOnHold = event.params.args.data;
+        this.confirmAction.emit(this.selectionOnHold);
+        event.stopImmediatePropagation();
+        this.element.select2("close");
+        return false;
+      }
+    });
+  }
+
+  private subscribeOnValueChange() {
+    log.debug("subscribeOnValueChange called");
+    this.element.on("select2:select select2:unselect", (event: any) => {
+      let val: any;
+
+      if (this.valueType === "object") {
+        var data = event.params.data;
+        // re-map the values back
+        val = this.mapToServerItem(data, this.itemOptions);
+      } else {
+        val = this.element.val();
+      }
+
+      this.value = val;
+
+      log.debug("onValueChange", val);
+      this.valueChanged.emit(val);
+
+      this.propagateChange(val);
+    });
+  }
+
+  private mapData(
+    data: any,
+    itemOptions: AeSelect2ItemOptions
+  ): Array<AeSelect2ItemOptions> {
+    return data.map((item: any) => {
+      return this.mapToSelect2Item(item, itemOptions);
+    });
+  }
+
+  private getItem(value: any, done: Function): void {
+    if (!this._ajaxOptions || !this._ajaxOptions.getItem) {
+      log.debug("getItem is not available");
+      done(value);
+      return;
+    }
+
+    if (typeof this._ajaxOptions.getItem !== "function") {
+      // log.debug('getItem -> getItemFromServer', this.value);
+      this.getItemFromServer(this.value, (item: any) => {
+        done(item);
+      });
+
+      return;
+    }
+
+    // first check the prepend items collection
+    if (
+      this._ajaxOptions.prependItems &&
+      this._ajaxOptions.prependItems.length > 0
+    ) {
+      const found = this._ajaxOptions.prependItems.find(
+        (item: any) => item[this._itemOptions.id] === this.value
+      );
+      // log.debug('getItem -> prependItems', found);
+      if (found) {
+        done(found);
+        return;
+      }
+    }
+
+    log.debug("getItem -> as function", this.value);
+    this._ajaxOptions.getItem(this.value, (item: any) => {
+      done(item);
+    });
+  }
+
+  private getItemFromServer(value: any, done: Function): any {
+    if (value == null) {
+      return;
+    }
+
+    if (typeof this._ajaxOptions.getItem === "function") {
+      return;
+    }
+    const getItemOptions = this._ajaxOptions.getItem;
+    const valueId =
+      typeof value === "object" ? value[this._itemOptions.id] : value;
+    let item = null;
+
+    $.ajax({
+      type: "GET",
+      url: `${getItemOptions.url}/${valueId}`
+    })
+      .then(res => {
+        item = getItemOptions.resEntity ? res[getItemOptions.resEntity] : res;
+      })
+      .always(() => {
+        done(item);
+      });
+  }
+
+  private mapToSelect2Item(
+    item: any,
+    itemOptions: AeSelect2ItemOptions
+  ): object {
+    const mapped = {
+      id: item[itemOptions.id],
+      text: item[itemOptions.text]
+    };
+
+    if (typeof itemOptions.disabledOption === "function") {
+      mapped["disabled"] = (itemOptions.disabledOption as AeSelect2DisableFn)(
+        item,
+        this.id
+      );
+    } else {
+      mapped["disabled"] = itemOptions.disabledOption
+        ? item[itemOptions.disabledOption.field] ===
+          itemOptions.disabledOption.value
+        : false;
+    }
+
+    const mappedProps = this.mapAdditioalProps(
+      item,
+      itemOptions.additionalProps
+    );
+
+    return Object.assign(mapped, mappedProps);
+  }
+
+  /**
+   * Maps the provided select2 data item to the server item object.
+   */
+  private mapToServerItem(
+    item: any,
+    itemOptions: AeSelect2ItemOptions
+  ): object {
+    let mapped = {};
+    mapped[itemOptions.id] = item.id;
+    mapped[itemOptions.text] = item.text;
+
+    const mappedProps = this.mapAdditioalProps(
+      item,
+      itemOptions.additionalProps
+    );
+
+    return Object.assign(mapped, mappedProps);
+  }
+
+  /**
+   * Maps additional properties from the provided props meta info.
+   */
+  private mapAdditioalProps(item: any, props: string[]): object {
+    let mapped = {};
+    if (props && props.length > 0) {
+      props.forEach(prop => (mapped[prop] = item[prop]));
+    }
+    return mapped;
+  }
+
+  private ajaxRequest(params: any, success: any, failure: any) {
+    const $request = $.ajax(params);
+    $request.then(success);
+    $request.fail(failure);
+    return $request;
+  }
+
+  private setAjaxOptions(
+    ajaxOptions: AeSelect2AjaxOptions,
+    itemOptions: AeSelect2ItemOptions
+  ): Select2AjaxOptions {
+    const that = this;
+    const options = <Select2AjaxOptions>{
+      url: ajaxOptions.url,
+      dataType: "json",
+      xhrFields: { withCredentials: true },
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json"
+      },
+      transport: (params: any, success: any, failure: any) => {
+        const searchParam = ajaxOptions.paramsMap["Search"] || "Search";
+        const searchKey = params.data[searchParam];
+
+        if (searchKey) {
+          let searchTimeout = that.element.data("searchTimeout");
+
+          if (searchTimeout) {
+            clearTimeout(searchTimeout);
+            that.element.data("searchTimeout", null);
+          }
+
+          // Start new time out
+          searchTimeout = setTimeout(() => {
+            return that.ajaxRequest(params, success, failure);
+          }, 400);
+
+          that.element.data("searchTimeout", searchTimeout);
+          return;
+        } else {
+          let searchTimeout = that.element.data("searchTimeout");
+
+          if (searchTimeout) {
+            clearTimeout(searchTimeout);
+            that.element.data("searchTimeout", null);
+          }
+        }
+
+        if (!ajaxOptions.ajaxResponseCache) {
+          return that.ajaxRequest(params, success, failure);
+        }
+
+        const page = params.data.PageIndex + 1;
+        let cachedResponse = null;
+        const _ajaxRespCache = ajaxOptions.ajaxResponseCache;
+
+        if (_ajaxRespCache != null && _ajaxRespCache.hasOwnProperty(page)) {
+          cachedResponse = _ajaxRespCache[page];
+        }
+
+        if (cachedResponse) {
+          success(cachedResponse);
+        } else {
+          return that.ajaxRequest(params, success, failure);
+        }
+      },
+      data: params => {
+        // select2 page starts at 1 whereas mysql limit starts at 0
+        const pageNum = params.page ? params.page - 1 : 0;
+        const searchParam = ajaxOptions.paramsMap["Search"] || "Search";
+        return {
+          [searchParam]: params.term,
+          PageIndex: pageNum,
+          PageSize: ajaxOptions.pageSize
+        };
+      },
+      statusCode: {
+        401: () => {
+          that.router.navigateByUrl(`/login2`);
+        }
+      },
+      processResults: (data, params) => {
+        // We are covering the edge case where response is just an array
+        // Note: this only detected if ajaxOptions.items = '';
+        if (ajaxOptions.items === "" && Array.isArray(data)) {
+          log.debug("Response is an array -> reconstructed data");
+          ajaxOptions.items = "Items";
+          const reConstructed = {};
+          reConstructed[ajaxOptions.items] = data;
+          reConstructed[ajaxOptions.total] = data.length;
+          data = reConstructed;
+        }
+
+        if (
+          ajaxOptions.prependItems &&
+          ajaxOptions.prependItems.length > 0 &&
+          (params.term == null || params.term === "")
+        ) {
+          ajaxOptions.prependItems.forEach(item =>
+            data[ajaxOptions.items].unshift(item)
+          );
+        }
+
+        const results = {
+          results: that.transformResults(data, itemOptions, ajaxOptions),
+          pagination: {
+            // params.page starts at 1
+            more:
+              (params.page || 1) * ajaxOptions.pageSize <
+              data[ajaxOptions.total]
+          }
+        };
+
+        // don't cache if search request
+        if (
+          !ajaxOptions.ajaxResponseCache ||
+          !(params.term == null || params.term === "")
+        ) {
+          return results;
+        }
+
+        ajaxOptions.ajaxResponseCache[params.page] = data;
+
+        // console.log(results);
+        return results;
+      },
+      cache: ajaxOptions.cache
+    };
+
+    if (ajaxOptions.transportFn) {
+      options.transport = ajaxOptions.transportFn;
+    }
+
+    return options;
+  }
+
+  private transformResults(
+    data: any,
+    itemOptions: AeSelect2ItemOptions,
+    ajaxOptions: AeSelect2AjaxOptions
+  ) {
+    let transformedResult = data[ajaxOptions.items].map((item: any) => {
+      return this.mapToSelect2Item(item, itemOptions);
+    });
+
+    if (itemOptions.hideDisabledItem) {
+      transformedResult = transformedResult.filter((item: any) => {
+        return !item.disabled;
+      });
+    }
+
+    return transformedResult;
+  }
+
+  private setElementValue(newValue: string | string[] | object) {
+    // log.debug('setElementValue', newValue);
+    if (Array.isArray(newValue)) {
+      for (let option of this.selector.nativeElement.options) {
+        if (newValue.indexOf(option.value) > -1) {
+          this.renderer.setProperty(option, "selected", "true");
+        }
+      }
+    } else if (typeof newValue === "object") {
+      log.debug("setElementValue -> value as object", newValue);
+      if (newValue && newValue[this._itemOptions.id] != null) {
+        var idVal = newValue[this._itemOptions.id];
+        var textVal = newValue[this._itemOptions.text];
+
+        if (this.element.find('option[value="' + idVal + '"]').length === 0) {
+          var text = textVal != null ? textVal : "";
+          var option = new Option(text, idVal, true, true);
+          this.element.append(option);
+
+          log.debug("setElementValue -> append option", option);
+        }
+      }
+    } else {
+      log.debug("setElementValue -> value as string", newValue);
+      this.renderer.setProperty(this.selector.nativeElement, "value", newValue);
+    }
+
+    if (this.element) {
+      this.element.trigger("change.select2");
+    }
+  }
+
+  writeValue(value: any): void {
+    log.debug("writeValue", value);
+
+    if (value == undefined || value === this.value) {
+      log.debug("writeValue return", value, this.value);
+      return;
+    }
+
+    this.getItem(value, (val: any) => {
+      log.debug("getItem done callback", value, val);
+      this.value = value; // ??? should we set val (object) instead
+      this.setElementValue(val);
+
+      // emitting on change probably not required as
+      // it is possible to subscribe to form value change
+      this.valueChanged.emit(val);
+    });
+  }
+  registerOnChange(fn: any): void {
+    log.debug("registerOnChange");
+    this.propagateChange = fn;
+  }
+  registerOnTouched(fn: any): void {
+    this.propagateTouch = fn;
+  }
+  setDisabledState(isDisabled: boolean): void {
+    this.disabled = isDisabled;
+    this.renderer.setProperty(
+      this.selector.nativeElement,
+      "disabled",
+      this.disabled
+    );
+  }
+}

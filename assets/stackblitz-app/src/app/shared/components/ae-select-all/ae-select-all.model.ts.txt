@@ -1,0 +1,16 @@
+export enum AeSelectAllStatus {
+  None = 'None', // fa-square-o (none checked)
+  Selected = 'Selected', // fa-minus-square (partially checked)
+  All = 'All' // fa-check-square (all checked)
+}
+
+export interface AeSelectAllItem {
+  type: 'divider' | 'item';
+
+  // Item label
+  label?: string;
+
+  // Tag is an identifier for this item, which
+  // will be passed into SelectAllClicked event
+  tag?: string;
+}

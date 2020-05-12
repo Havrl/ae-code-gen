@@ -1,0 +1,74 @@
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { finalize } from 'rxjs/operators';
+import { FormGroup, FormBuilder, Validators } from '@angular/forms';
+
+@Component({
+  selector: 'app-home',
+  templateUrl: './home.component.html',
+  styleUrls: ['./home.component.scss'],
+})
+export class HomeComponent implements OnInit, OnDestroy {
+
+  countryList: any = [
+    {
+      code: 'IE',
+      description: 'Ireland'
+    },
+    {
+      code: 'GB',
+      description: 'United Kingdom'
+    }
+  ];
+
+  companyList: [
+    { id: '', text: ''},
+    { id: '1', text: 'Company 1'},
+    { id: '2', text: 'Company 2'}
+  ];
+
+  employeeForm: FormGroup = new FormGroup({});
+
+  get firstName() {
+    return this.employeeForm.get("firstName");
+  }
+
+  get lastName() {
+    return this.employeeForm.get("lastName");
+  }
+
+  get country() {
+    return this.employeeForm.get("country");
+  }
+
+  constructor(private fb: FormBuilder) {}
+
+  ngOnInit() {
+    this.initForm();
+  }
+
+  ngOnDestroy() {}
+
+  initForm() {
+    this.employeeForm = this.fb.group({
+      firstName: ["", [Validators.required]],
+      lastName: ["", [Validators.required]],
+      country: [null, [Validators.required]],
+      isEmployed: [false],
+      isEmployed2: [false],
+      status: [''],
+      company: ['']
+    });
+  }
+
+  loadData() {
+
+  }
+
+  setFormValues() {
+    
+  }
+
+  onSubmit() {
+    console.log(this.employeeForm.value);
+  }
+}

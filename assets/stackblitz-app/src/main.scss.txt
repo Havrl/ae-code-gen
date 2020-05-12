@@ -1,0 +1,13 @@
+@import "./theme/theme-variables";
+
+// 3rd party libraries
+@import "~bootstrap/scss/bootstrap";
+@import "~font-awesome/scss/font-awesome.scss";
+
+@import "./theme/select2";
+@import "./theme/checkbox";
+@import "./theme/primeng";
+@import "./theme/paginator";
+
+// Theme customization
+@import "./theme/theme";

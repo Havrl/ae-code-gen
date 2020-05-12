@@ -1,0 +1,61 @@
+/**
+ * Collection of common util methods
+ * borrowed from: https://www.30secondsofcode.org
+ *
+ * Implementation of this util collection is based on
+ * the suggestion from Asad Saeeduddin (https://stackoverflow.com/questions/32790311/how-to-structure-utility-class)
+ * e.g. compliant with tree-shaking module optimization.
+ *
+ * @example
+ * import { deepClone, hasValue } from '../../../core/utils/common.utils';
+ *
+ * constructor() {
+ *  const clonedObj = deepClone(obj);
+ * }
+ */
+
+/**
+ * Creates a deep clone of an object.
+ * @param obj object or array
+
+  Use recursion. Check if the passed object is null and, if so, return null.
+  Use Object.assign() and an empty object ({}) to create a shallow clone of the original.
+  Use Object.keys() and Array.prototype.forEach() to determine which key-value pairs need to be deep cloned.
+
+  @example
+    const a = { foo: 'bar', obj: { a: 1, b: 2 } };
+    const b = deepClone(a); // a !== b, a.obj !== b.obj
+  */
+export const deepClone = (obj: any) => {
+  if (obj === null) return null;
+  const clone = Object.assign({}, obj);
+  Object.keys(clone).forEach(key => (clone[key] = typeof obj[key] === 'object' ? deepClone(obj[key]) : obj[key]));
+  return Array.isArray(obj) && obj.length
+    ? (clone.length = obj.length) && Array.from(clone)
+    : Array.isArray(obj)
+    ? Array.from(obj)
+    : clone;
+};
+
+/**
+ * Generates a UUID, compliant with RFC4122 version 4.
+ */
+export const uniqueId = () =>
+  (([1e7] as any) + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c: number) =>
+    // tslint:disable-next-line:no-bitwise
+    (c ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))).toString(16)
+  );
+
+/**
+ * Checks if provided string is not null, undefined or empty string
+ * @param value - value to check
+ * @example hasValue('');
+ */
+export const hasValue = (value: string): boolean => value != null && value !== '';
+
+/**
+ * Checks if provided string is null, undefined, or empty / blank (1 or more spaces)
+ * @param value - value to check
+ * @example IsNullOrWhiteSpace(' ');
+ */
+export const IsNullOrWhiteSpace = (value: string): boolean => !value || value.trim().length === 0;

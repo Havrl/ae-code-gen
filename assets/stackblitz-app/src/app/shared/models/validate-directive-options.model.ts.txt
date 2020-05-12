@@ -1,0 +1,4 @@
+export interface ValidateDirectiveOptions {
+  style?: string;
+  validatePristine?: boolean;
+}

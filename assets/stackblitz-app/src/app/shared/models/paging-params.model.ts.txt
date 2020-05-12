@@ -1,0 +1,8 @@
+export interface PagingParams {
+  pageIndex: number;
+  pageSize: number;
+  sortBy?: string;
+  sortDirection?: string;
+  searchBy?: string;
+  filterBy?: string;
+}

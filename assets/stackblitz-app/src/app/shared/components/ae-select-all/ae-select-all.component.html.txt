@@ -1,0 +1,39 @@
+<div class="action-dropdown" ngbDropdown>
+  <button class="btn btn-link" id="selectAllDropDown" [disabled]="disabled" ngbDropdownToggle>
+    <i
+      class="fa fa-2x"
+      [ngClass]="{
+        'fa-square-o': status === 'None',
+        'fa-minus-square': status === 'Selected',
+        'fa-check-square': status === 'All'
+      }"
+    ></i>
+  </button>
+
+  <!--
+    Below are the examples (commented out) of displaying the real checkbox
+    instead of icons, which can be clicked to check / uncheck the items.
+  -->
+
+  <!-- <div ngbDropdownToggle>
+      <p-checkbox></p-checkbox>
+    </div> -->
+
+  <!-- <div class="form-group ae-checkbox" ngbDropdownToggle>
+        <input type="checkbox" id="formCheckbox">
+        <label for="formCheckbox"></label>
+      </div> -->
+
+  <div ngbDropdownMenu aria-labelledby="selectAllDropDown">
+    <h6 class="dropdown-header">{{ header }}</h6>
+    <ng-container *ngFor="let item of defaultMenuItems">
+      <a [attr.data-tag]="item.tag" class="dropdown-item" href="javascript:;" (click)="onClick(item)">{{ item.label }}</a>
+    </ng-container>
+    <ng-container *ngFor="let item of menuItems">
+      <a [attr.data-tag]="item.tag" *ngIf="item.type === 'item'" class="dropdown-item" href="javascript:;" (click)="onClick(item)">{{
+        item.label
+      }}</a>
+      <div class="dropdown-divider" *ngIf="item.type === 'divider'"></div>
+    </ng-container>
+  </div>
+</div>

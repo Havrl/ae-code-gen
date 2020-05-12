@@ -1,0 +1,11 @@
+<div class="ui-table-search input-group" [ngStyle]="customCss">
+  <input type="search" #searchField class="form-control ae-search-input" [attr.placeholder]="placeholder" (keyup)="onKeyup($event)" [disabled]="disabled">
+
+  <span class="input-group-btn">
+      <button #searchButton class="btn btn-outline-primary ae-search-btn" type="button"  [disabled]="disabled"
+          (click)="hasFilter ? resetFilter() : applyFilter()">
+          <span class="fa fa-search" [ngClass]="{'fa-times': hasFilter}"></span>
+          <span class="sr-only">Search</span>
+      </button>
+  </span>
+</div>

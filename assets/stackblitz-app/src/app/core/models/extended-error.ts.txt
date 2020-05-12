@@ -1,0 +1,38 @@
+// Used to provide innerError support
+// See https://gist.github.com/justmoon/15511f92e5216fa2624b
+
+export interface ExtendedError extends Error {
+  readonly name: string;
+  readonly message: string;
+  readonly innerError?: Error;
+  readonly stack: string;
+  readonly logId?: string;
+  readonly errorCode?: string;
+}
+
+export interface ExtendedErrorConstructor {
+  new (message?: string, innerError?: Error, errorCode?: string, logId?: string): ExtendedError;
+  readonly prototype: ExtendedError;
+}
+
+// tslint:disable-next-line:no-shadowed-variable
+export const ExtendedError: ExtendedErrorConstructor = <any>class ExtendedError {
+  public constructor(message?: string, innerError?: ExtendedError, errorCode?: string, logId?: string) {
+    let fixedStack = '';
+    const stack = new Error(message).stack;
+    // in IE11 stack is not available
+    if (stack) {
+      const currentStack = new Error(message).stack.split('\n');
+      currentStack.splice(1, 1);  // Remove this method from the stack trace to leave it as the caller position
+      fixedStack = currentStack.join('\n');
+    }
+    Object.defineProperty(this, 'name', { get: () => 'ExtendedError' });
+    Object.defineProperty(this, 'message', { get: () => message });
+    Object.defineProperty(this, 'innerError', { get: () => innerError });
+    Object.defineProperty(this, 'stack', { get: () => fixedStack });
+    Object.defineProperty(this, 'errorCode', { get: () => errorCode });
+    Object.defineProperty(this, 'logId', { get: () => logId });
+  }
+};
+(ExtendedError as any).prototype = Object.create(Error.prototype);
+ExtendedError.prototype.constructor = ExtendedError;

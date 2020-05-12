@@ -1,0 +1,6 @@
+export interface AeGridColumn {
+  field: string;
+  title: string;
+  sort?: string;
+  width?: string;
+}

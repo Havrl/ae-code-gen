@@ -1,0 +1,89 @@
+import { Injectable } from '@angular/core';
+
+@Injectable()
+export class AeSelectCustomAdapters {
+
+  utils = $.fn.select2.amd.require('select2/utils');
+  dropdown = $.fn.select2.amd.require('select2/dropdown');
+  dropdownSearch = $.fn.select2.amd.require('select2/dropdown/search');
+  attachBody = $.fn.select2.amd.require('select2/dropdown/attachBody');
+  attachContainer = $.fn.select2.amd.require('select2/dropdown/attachContainer');
+
+  constructor() {
+    // when the customButtonAdapter is called by ae-select2
+    // the context will refer to ae-select2,
+    // so explicitly set the context here.
+    this.customButtonAdapter = this.customButtonAdapter.bind(this);
+    this.templateFormatBillDotCom = this.templateFormatBillDotCom.bind(this);
+  }
+
+  customButtonAdapter(adapterOptions: any) {
+
+    class CustomButton {
+
+      render(decorated: any) {
+        var $rendered = decorated.call(this);
+        var self: any = this;
+
+        var btnText = adapterOptions['btnText'] || '';
+        var btnClickHandler = adapterOptions['btnClickHandler'] || function() {};
+        var btnStyle = adapterOptions['btnStyle'] || 'width: 100%';
+
+        var $customButton = $(
+          `<button class="btn btn-outline-primary" type="button" style="${btnStyle}">${btnText}</button>`
+        );
+
+        $rendered.find('.select2-dropdown').prepend($customButton);
+
+        $customButton.on('click', function(e) {
+          btnClickHandler(self.$element);
+          self.trigger('close');
+        });
+
+        // workaround to close the drop-down as it is not closing on click
+        $rendered.on('click', function() {
+          self.trigger('close');
+        });
+
+        return $rendered;
+      }
+
+      destroy() {
+
+        var self: any = this;
+
+        // unbinding the attached click event handlers
+        // for both custom button and $rendered elements
+        var $btn = self.$dropdown.find('button');
+        if ($btn.length > 0) {
+          $btn.off('click');
+        }
+        if (self.$dropdownContainer) {
+          self.$dropdownContainer.off('click');
+        }
+      }
+    }
+
+    return this.utils.Decorate(
+      this.utils.Decorate(
+        this.utils.Decorate(
+          this.utils.Decorate(
+            this.dropdown,
+            this.dropdownSearch
+          ),
+          this.attachContainer),
+        this.attachBody),
+      CustomButton);
+  }
+
+  templateFormatBillDotCom(data: any) {
+    const tag = ' [Bill.com]';
+    if (data.text.indexOf(tag) > -1) {
+      const cleaned = this.utils.escapeMarkup(data.text).replace(tag, '');
+      return `<span class="billdotcom-dropdown">${cleaned}</span>`;
+    }
+
+    return this.utils.escapeMarkup(data.text);
+  }
+
+}

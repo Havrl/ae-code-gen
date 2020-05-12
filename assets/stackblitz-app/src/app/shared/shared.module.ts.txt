@@ -1,0 +1,56 @@
+import { NgModule } from "@angular/core";
+import { CommonModule } from "@angular/common";
+import { NgbModule } from "@ng-bootstrap/ng-bootstrap";
+import { FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { TableModule } from "primeng/table";
+import { CheckboxModule } from 'primeng/checkbox';
+import { ValidateDirective } from "./directives/validate.directive";
+
+import "select2";
+import { AeSelect2Component } from "./components/ae-select2/ae-select2.component";
+import { AeSelectCustomAdapters } from "./components/ae-select2/ae-select2.adapters";
+import { TrackByPropertyPipe } from "./directives/track-by-property.pipe";
+import { PaginatorComponent } from "./components/paginator/paginator.component";
+import { AeGridBaseComponent } from "./components/ae-grid/ae-grid-base.component";
+import { AeSearchComponent } from "./components/ae-search/ae-search.component";
+import { AeDateFilterComponent } from "./components/ae-date-filter/ae-date-filter.component";
+import { AeSelectAllComponent } from "./components/ae-select-all/ae-select-all.component";
+
+@NgModule({
+  imports: [
+    CommonModule,
+    FormsModule,
+    ReactiveFormsModule,
+    NgbModule,
+    TableModule,
+    CheckboxModule
+  ],
+  exports: [
+    CommonModule,
+    NgbModule,
+    TableModule,
+    CheckboxModule,
+    FormsModule,
+    ReactiveFormsModule,
+    ValidateDirective,
+    AeSelect2Component,
+    PaginatorComponent, 
+    AeGridBaseComponent,
+    AeSearchComponent,
+    AeDateFilterComponent,
+    AeSelectAllComponent,
+    TrackByPropertyPipe
+  ],
+  declarations: [
+    ValidateDirective, 
+    AeSelect2Component,
+    PaginatorComponent, 
+    AeGridBaseComponent,
+    AeSearchComponent,
+    AeDateFilterComponent,
+    AeSelectAllComponent,
+    TrackByPropertyPipe
+  ],
+  providers: [AeSelectCustomAdapters]
+})
+export class SharedModule {}

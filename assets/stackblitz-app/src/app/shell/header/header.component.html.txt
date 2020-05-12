@@ -1,0 +1,30 @@
+<header>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <a class="navbar-brand" href="/">Demo App</a>
+    <button
+      class="navbar-toggler"
+      type="button"
+      aria-controls="navbar-menu"
+      aria-label="Toggle navigation"
+      (click)="toggleMenu()"
+      [attr.aria-expanded]="!menuHidden"
+    >
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div id="navbar-menu" class="collapse navbar-collapse float-xs-none" [ngbCollapse]="menuHidden">
+      <div class="navbar-nav">
+        <a class="nav-item nav-link text-uppercase" routerLink="/home" routerLinkActive="active">
+          <i class="fa fa-home mr-1"></i>
+          <span>Home</span>
+        </a>
+        <a class="nav-item nav-link text-uppercase" routerLink="/about" routerLinkActive="active">
+          <i class="fa fa-question-circle mr-1"></i>
+          <span>About</span>
+        </a>
+      </div>
+      <div class="navbar-nav text-warning ml-auto">
+        <span>v0.1</span>
+      </div>
+    </div>
+  </nav>
+</header>

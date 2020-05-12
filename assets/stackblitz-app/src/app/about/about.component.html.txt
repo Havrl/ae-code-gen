@@ -1,0 +1,8 @@
+<div class="container-fluid">
+  <div class="jumbotron text-center">
+    <h2>
+      Angular Component Code Generator - Demo App
+    </h2>
+    <p><i class="fa fa-bookmark"></i> Version {{ version }}</p>
+  </div>
+</div>

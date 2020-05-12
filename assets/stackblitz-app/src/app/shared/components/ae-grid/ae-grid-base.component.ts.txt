@@ -1,0 +1,165 @@
+import { AeDateFilterComponent } from './../ae-date-filter/ae-date-filter.component';
+import { AeSelectAllComponent } from '../ae-select-all/ae-select-all.component';
+import { AeSelectAllItem } from '../ae-select-all/ae-select-all.model';
+import { AeSearchComponent } from '../ae-search/ae-search.component';
+import { LazyLoadEvent, FilterMetadata } from 'primeng/api';
+import { Component, HostListener, Input, OnInit, ViewChild, AfterContentInit, QueryList, ContentChildren, AfterViewChecked, AfterViewInit, Output, EventEmitter, TemplateRef } from '@angular/core';
+
+import { Table } from 'primeng/table';
+import { Logger, LogLevel } from '../../../core/services/logger.service';
+import { PaginatorComponent } from '../paginator/paginator.component';
+import { PaginatorPage, PagingParams } from '../../models';
+import { AeGridColumn } from './ae-grid-column.model';
+import { Subject } from 'rxjs';
+import { DateFilterMetadata } from '../ae-date-filter/date-filter-metadata.model';
+
+import $ from 'jquery';
+
+const log = new Logger('AeGridBase', LogLevel.Off);
+
+
+
+@Component({
+  selector: 'ae-grid-base',
+  template: ''
+})
+export class AeGridBaseComponent {
+
+  loading: boolean = false;
+  scrollHeight: string;
+  rows: number = 10;
+  first: number = 1;
+  pagingParams: PagingParams;
+  columns: AeGridColumn[];
+  totalRecords: number;
+
+  selectAllItems: AeSelectAllItem[];
+  selection: any[];
+
+  private gridReload = new Subject<PagingParams>();
+  gridReload$ = this.gridReload.asObservable();
+
+  private gridSelectAll = new Subject<AeSelectAllItem>();
+  gridSelectAll$ = this.gridSelectAll.asObservable();
+
+  @ViewChild('dt') dt: Table;
+  @ViewChild('paginator') paginator: PaginatorComponent;
+  @ViewChild('searchBy') searchBy: AeSearchComponent;
+  @ViewChild('selectAll') selectAll: AeSearchComponent;
+  @ViewChild('dateFilter') dateFilter: AeDateFilterComponent;
+
+  // https://stackoverflow.com/questions/35527456/angular-window-resize-event
+  @HostListener('window:resize', ['$event']) onResize(event: any) {
+    // guard against resize before view is rendered
+    if (this.dt) {
+      const viewPortHeight = event.target.innerHeight - this.dt.el.nativeElement.offsetTop;
+      this.scrollHeight = viewPortHeight - 191 + 'px';
+      $('div.ui-table.ui-widget').css('height', viewPortHeight - 90 + 'px');
+      log.debug('resize grid');
+    }
+  }
+
+  // Good read on ng-template, ng-container, ngTemplateOutlet:
+  // https://blog.angular-university.io/angular-ng-template-ng-container-ngtemplateoutlet/
+  // https://blog.angular-university.io/angular-ng-content/
+
+  // Wrapping primeng component
+  // http://embed.plnkr.co/0QQD7WUksrrrFg6BUKKh/
+  // https://forum.primefaces.org/viewtopic.php?f=35&t=57029&p=172380&hilit=wrap#p172380
+  // https://forum.primefaces.org/viewtopic.php?f=35&t=51190&p=156840&hilit=wrap#p156840
+
+  // https://stackoverflow.com/questions/46117522/correct-way-to-implement-wrapper-components-in-angular-4
+  // https://itnext.io/angular-which-component-library-to-choose-or-write-your-own-cf33294f0f91
+  // https://stackoverflow.com/questions/39232659/how-to-wrap-template-using-ngfortemplate/39232722
+
+  // https://github.com/primefaces/primeng/blob/master/src/app/components/table/table.ts
+
+  constructor() {
+
+    this.pagingParams = <PagingParams>{
+      pageIndex: 0,
+      pageSize: this.rows
+    };
+
+    this.triggerResize();
+  }
+
+  gridLoadChange(value: PagingParams) {
+    this.gridReload.next(value);
+  }
+
+  selectAllClicked(value: AeSelectAllItem) {
+    this.gridSelectAll.next(value);
+  }
+
+  triggerResize() {
+    // Trigger window resize to set the grid height
+    // Note, the dispatchEvent is not working in IE11.
+    // Whereas the $(window).trigger('resize') is not working at all.
+    // (https://stackoverflow.com/questions/1818474/how-to-trigger-the-window-resize-event-in-javascript)
+    setTimeout(() => window.dispatchEvent(new Event('resize')));
+  }
+
+  onGridLoad(event: LazyLoadEvent) {
+
+    log.debug('onLazyLoad', event);
+
+    const sortBy = event.sortField;
+    const sortDirection = event.sortField != null && event.sortOrder != null ? (event.sortOrder === 1 ? 'asc' : 'desc') : null;
+    const searchBy = event.globalFilter;
+
+    Object.assign(this.pagingParams, { sortBy, sortDirection, searchBy });
+
+    // this.lazyLoad.emit(this.pagingParams);
+    this.gridLoadChange(this.pagingParams);
+  }
+
+  onPageChange(event: PaginatorPage) {
+    log.debug('onPageChange', event);
+
+    // clear the selection if available;
+    this.dt.toggleRowsWithCheckbox(null, false);
+
+    const pageIndex = event.first / event.rows;
+    const pageSize = event.rows;
+
+    Object.assign(this.pagingParams, { pageIndex, pageSize });
+
+    // this.lazyLoad.emit(this.pagingParams);
+    this.gridLoadChange(this.pagingParams);
+  }
+
+  searchByFilter(event: FilterMetadata) {
+    log.debug('searchByFilter', event);
+
+    // clear the selection if available;
+    this.dt.toggleRowsWithCheckbox(null, false);
+
+    // reset the paginator without emmiting onPageChange
+    // to avoid making additional lazyload call.
+    if (this.paginator && this.paginator.first > 1) {
+      this.paginator.first = 1;
+      this.paginator.updateRange();
+      this.pagingParams.pageIndex = 0;
+    }
+    this.dt.filterGlobal(event.value, event.matchMode);
+  }
+
+  onDateFilter(event: DateFilterMetadata) {
+    log.debug('onDateFilter', event);
+
+    Object.assign(this.pagingParams, event);
+
+    this.gridLoadChange(this.pagingParams);
+  }
+
+  onSelectAllClick(event: AeSelectAllItem) {
+    log.debug('onSelectAllClick', event);
+
+    if (event.tag === 'all' || event.tag === 'none') {
+      this.dt.toggleRowsWithCheckbox(null, event.tag === 'all');
+    }
+
+    this.selectAllClicked(event);
+  }
+}

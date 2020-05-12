@@ -1,0 +1,29 @@
+import { AeSelectAllStatus, AeSelectAllItem } from './ae-select-all.model';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
+
+@Component({
+  selector: 'ae-select-all',
+  templateUrl: './ae-select-all.component.html',
+  styles: [
+    `.dropdown-toggle::after {
+      vertical-align: .5em;
+    }`  
+  ]
+})
+export class AeSelectAllComponent {
+
+  @Input() menuItems: AeSelectAllItem[];
+  @Input() header: string = 'Select Items';
+  @Input() status: AeSelectAllStatus = AeSelectAllStatus.None;
+  @Input() disabled: boolean;
+  @Input() defaultMenuItems: AeSelectAllItem[] = [
+    { type: 'item', label: 'All', tag: 'all' },
+    { type: 'item', label: 'None', tag: 'none' },
+  ];
+  @Output() clicked: EventEmitter<AeSelectAllItem> = new EventEmitter();
+
+  onClick(event: AeSelectAllItem) {
+    this.clicked.emit(event);
+  }
+
+}

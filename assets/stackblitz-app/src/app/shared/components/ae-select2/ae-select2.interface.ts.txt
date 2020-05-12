@@ -1,0 +1,51 @@
+export interface AeSelect2AjaxOptions {
+  url?: any,
+  items?: string,
+  total?: string,
+  pageSize?: number,
+  cache?: boolean,
+  prependItems?: Object[],
+  getItem?: AeSelect2GetItem | Function,
+  transportFn?: AjaxFunction,
+  ajaxResponseCache?: object,
+  paramsMap?: object
+}
+
+export interface AeSelect2ItemOptions {
+  id: string, // id map
+  text: string, // text map
+  disabledOption?: AeSelect2DisabledOption | AeSelect2DisableFn,
+  additionalProps?: string[],
+  hideDisabledItem?: boolean
+}
+
+export interface AeSelect2DisabledOption {
+  field: string,
+  value: string | boolean,
+}
+
+export interface AeSelect2DisableFn {
+  (item: any, aeSelect2Id?: string): boolean;
+}
+
+export interface AeSelect2CustomAdapter {
+  decorator: 'dropdownAdapter' | 'resultsAdapter' | 'dataAdapter' | 'selectionAdapter',
+  adapterFn: Function
+}
+
+export interface AeSelect2GetItem {
+  url: string,
+  resEntity?: string // name of object in response
+}
+
+export interface Select2OptionData {
+  id: string;
+  text: string;
+  disabled?: boolean;
+  children?: Array<Select2OptionData>;
+  additional?: any;
+}
+
+export interface Select2TemplateFunction {
+  (state: Select2OptionData): JQuery | string;
+}

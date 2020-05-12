@@ -1,0 +1,37 @@
+.paginator-btn-next,
+.paginator-btn-prev {
+  color: $paginator-btn-color;
+  font-size: 20px;
+  font-weight: 600;
+  margin: auto 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.paginator-btn-next {
+  margin-left: 0.625rem;
+}
+.paginator-btn-prev {
+  margin-right: 0.625rem;
+}
+
+.paginator-body {
+  margin-bottom: 0;
+  font-weight: 400;
+
+  li {
+    display: inline-block;
+    color: $paginator-text-color;
+    vertical-align: middle;
+  }
+
+  .fa {
+    color: $paginator-text-color;
+    font-size: 20px;
+    font-weight: 600;
+  }/*  */
+}
+
+.paginator-result {
+  line-height: 34px;
+}

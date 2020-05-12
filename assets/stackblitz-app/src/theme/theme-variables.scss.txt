@@ -1,0 +1,124 @@
+/*
+ * Application global variables.
+ */
+
+// Set Font Awesome font path
+$fa-font-path: "node_modules/font-awesome/fonts";
+
+// ---------------------------------------------------------------------------
+// Bootstrap variables
+//
+// Override Bootstrap variables here to suite your theme.
+// Copy variables you want to customize from node_modules/bootstrap/scss/_variables.scss
+
+//
+// Color system
+//
+
+$white: #fff;
+$gray-100: #f8f9fa;
+$gray-200: #e9ecef;
+$gray-300: #dee2e6;
+$gray-400: #ced4da;
+$gray-500: #adb5bd;
+$gray-600: #868e96;
+$gray-700: #495057;
+$gray-800: #343a40;
+$gray-900: #212529;
+$gray-neutral: #cccccc;
+$gray-background: #fafafa;
+
+$black: #000;
+$black-notice: #222222;
+$black-dark: #172433; // ae-navbar background
+$black-medium: #1b1d1f; // ae-table header text (could be replaced with the close one)
+$black-light: #4b4b4b; // ae-form label
+
+
+$blue: #0073dd;
+$blue-verylight: #dcecff;
+$indigo: #6610f2;
+$purple: #6f42c1;
+$pink: #e83e8c;
+$red: #dc3545;
+$orange: #fd7e14;
+$yellow: #ffc107;
+$green: #28a745;
+$teal: #20c997;
+$cyan: #17a2b8;
+
+$theme-colors: (
+  primary: $blue,
+  secondary: $gray-600,
+  success: $green,
+  info: $cyan,
+  warning: $yellow,
+  danger: $red,
+  light: $gray-100,
+  dark: $gray-800,
+);
+
+  $font-size-medium: 0.8125rem; // 13px
+  $fa-font-family: "FontAwesome";
+
+  $border-color: $gray-600;
+  $border-radius: 0.1rem;
+
+  // Checkbox / radio
+  $custom-radio-size: 1.375rem; // 24px
+  $custom-radio-dot-size: 0.5rem; // 8px
+  $custom-radio-dot-top-left: 0.4375rem; // 7px
+  $custom-radio-border-color: $gray-300;
+  $custom-radio-main-color: $blue;
+  $custom-radio-disabled-color: lighten($custom-radio-border-color, 14%);
+  $custom-radio-disabled-checked-color: lighten($custom-radio-main-color, 30%);
+
+  // select2
+  $select2-highlighted-option-background-color: $blue;
+  $select2-highlighted-option-color: $white;
+  $select2-container-focus-border-color: $blue;
+  $select2-container-focus-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6);
+  $select2-container-dropdown-border-color: $blue;
+
+  // primeng
+  $disabled-opacity: 0.35;
+
+  // primeng fuelux loader
+$fuelux-loader-height: 64px;
+$fuelux-loader-width: 64px;
+$fuelux-loader-font-size: 64px;
+$fuelux-loader-background-image-url: url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjRweCIgaGVpZ2h0PSI2NHB4IiB2aWV3Qm94PSIwIDAgNjQgNjQiIHZlcnNpb249IjEuMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB4bWxuczp4bGluaz0iaHR0cDovL3d3dy53My5vcmcvMTk5OS94bGluayI+PGcgd2lkdGg9IjU0cHgiIGhlaWdodD0iNTRweCIgdmlld0JveD0iNSA1IDU0IDU0IiBpZD0ibG9hZGVyIiBzdHJva2U9Im5vbmUiIHN0cm9rZS13aWR0aD0iMSIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoNS4wMDAwMDAsIDUuMDAwMDAwKSIgZmlsbD0iIzE1ODllZSI+PGcgaWQ9InNwaW5uZXItbWVkaXVtIj48ZyBpZD0iT3ZhbC0zNSI+PGNpcmNsZSBpZD0iVG9wIiBjeD0iMjciIGN5PSI2IiByPSI1Ij48L2NpcmNsZT48Y2lyY2xlIGlkPSJUb3BSaWdodCIgY3g9IjQ4IiBjeT0iMTciIHI9IjUiPjwvY2lyY2xlPjxjaXJjbGUgaWQ9IkJvdHRvbVJpZ2h0IiBjeD0iNDgiIGN5PSIzNiIgcj0iNSI+PC9jaXJjbGU+PGNpcmNsZSBpZD0iQm90dG9tIiBjeD0iMjciIGN5PSI0OCIgcj0iNSI+PC9jaXJjbGU+PGNpcmNsZSBpZD0iQm90dG9tTGVmdCIgY3g9IjYiIGN5PSIzNiIgcj0iNSI+PC9jaXJjbGU+PGNpcmNsZSBpZD0iVG9wTGVmdCIgY3g9IjYiIGN5PSIxNyIgcj0iNSI+PC9jaXJjbGU+PC9nPjwvZz48L2c+PGFuaW1hdGVNb3Rpb24geGxpbms6aHJlZj0iI1RvcCIgcGF0aD0iTSAwIDAgViAtNSBaIiBkdXI9IjAuMjVzIiBiZWdpbj0iMHM7IFRvcExlZnRBbmltLmVuZCIgaWQ9IlRvcEFuaW0iIC8+PGFuaW1hdGVNb3Rpb24geGxpbms6aHJlZj0iI1RvcFJpZ2h0IiBwYXRoPSJNIDAgMCBMIDUgLTUgWiIgZHVyPSIwLjI1cyIgYmVnaW49IlRvcEFuaW0uZW5kIiBpZD0iVG9wUmlnaHRBbmltIiAvPjxhbmltYXRlTW90aW9uIHhsaW5rOmhyZWY9IiNCb3R0b21SaWdodCIgcGF0aD0iTSAwIDAgTCA1IDUgWiIgZHVyPSIwLjI1cyIgYmVnaW49IlRvcFJpZ2h0QW5pbS5lbmQiIGlkPSJCb3R0b21SaWdodEFuaW0iIC8+PGFuaW1hdGVNb3Rpb24geGxpbms6aHJlZj0iI0JvdHRvbSIgcGF0aD0iTSAwIDAgViA1IFoiIGR1cj0iMC4yNXMiIGJlZ2luPSJCb3R0b21SaWdodEFuaW0uZW5kIiBpZD0iQm90dG9tQW5pbSIgLz48YW5pbWF0ZU1vdGlvbiB4bGluazpocmVmPSIjQm90dG9tTGVmdCIgcGF0aD0iTSAwIDAgTCAtNSA1IFoiIGR1cj0iMC4yNXMiIGJlZ2luPSJCb3R0b21BbmltLmVuZCIgaWQ9IkJvdHRvbUxlZnRBbmltIiAvPjxhbmltYXRlTW90aW9uIHhsaW5rOmhyZWY9IiNUb3BMZWZ0IiBwYXRoPSJNIDAgMCBMIC01IC01IFoiIGR1cj0iMC4yNXMiIGJlZ2luPSJCb3R0b21MZWZ0QW5pbS5lbmQiIGlkPSJUb3BMZWZ0QW5pbSIgLz48L3N2Zz4=");
+
+// primeng table
+$p-table-border: 1px solid $gray-500;
+$p-table-scrollable-body-border: none;
+$p-table-scrollable-header-border: 2px solid $gray-300;
+$p-table-caption-background: $white;
+$p-table-caption-padding: 0.5rem 1.875rem;
+$p-table-header-background-color: $gray-background;
+$p-table-header-color: $gray-900;
+$p-table-header-font-size: 13px;
+$p-table-header-padding: 0.5rem;
+$p-table-header-height: unset;
+$p-table-header-cell-border: none;
+$p-table-header-text-transform: uppercase;
+$p-table-sortable-background: $gray-neutral;
+$p-table-sortable-border-color: $gray-300;
+$p-table-sortable-background-color: $gray-100;
+$p-table-sortable-background-image: linear-gradient(to bottom, $gray-background, $gray-400);
+$p-table-sortable-icon-color: $gray-900;
+
+// primeng checkbox
+$p-checkbox-size: 20px;
+$p-checkbox-icon-top-margin: 1px;
+$p-checkbox-icon-font-size: 1.3em;
+
+// paginator
+$paginator-btn-color: $blue;
+$paginator-text-color: $blue;
+
+
+// Use Bootstrap defaults for other variables, imported here so we can access all app variables in one place when used
+// in components.
+@import "~bootstrap/scss/_functions";
+@import "~bootstrap/scss/_variables";

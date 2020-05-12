@@ -1,0 +1,183 @@
+import { DateFormatPipe } from 'ngx-moment';
+import {
+  Component,
+  OnInit,
+  Input,
+  Output,
+  EventEmitter,
+  ChangeDetectionStrategy,
+  AfterViewInit,
+  ViewChild,
+  ChangeDetectorRef,
+} from '@angular/core';
+import { NgbDate, NgbCalendar, NgbDatepicker, NgbDateStruct, NgbDropdown } from '@ng-bootstrap/ng-bootstrap';
+
+import * as moment from 'moment';
+
+@Component({
+  selector: 'ae-date-filter',
+  templateUrl: './ae-date-filter.component.html',
+  styleUrls: ['./ae-date-filter.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class AeDateFilterComponent implements OnInit {
+  hoveredDate: NgbDate;
+  fromDate: NgbDate;
+  toDate: NgbDate;
+  dropDownPlaceholder: string;
+
+  ranges: Array<any>;
+
+  @Input() placeholder: string = 'Choose dates...';
+  @Output() filter: EventEmitter<any> = new EventEmitter();
+
+  @ViewChild(NgbDatepicker) datepicker: NgbDatepicker;
+  @ViewChild(NgbDropdown) dropDown: NgbDropdown;
+
+  constructor(private calendar: NgbCalendar, private cd: ChangeDetectorRef) {
+    this.dropDownPlaceholder = this.placeholder;
+  }
+
+  ngOnInit() {
+    this.initRanges();
+  }
+
+  fromJSDate(jsDate: Date) {
+    return new NgbDate(jsDate.getFullYear(), jsDate.getMonth() + 1, jsDate.getDate());
+  }
+
+  toJSDate(date: NgbDate) {
+    const jsDate = new Date(date.year, date.month - 1, date.day, 12);
+    // this is done avoid 30 -> 1930 conversion
+    if (!isNaN(jsDate.getTime())) {
+      jsDate.setFullYear(date.year);
+    }
+    return jsDate;
+  }
+
+  initRanges() {
+    const today = this.calendar.getToday();
+
+    this.ranges = [
+      {
+        text: 'Last 30 Days',
+        from: this.calendar.getPrev(today, 'd', 29),
+        to: today,
+      },
+      {
+        text: 'Last 60 Days',
+        from: this.calendar.getPrev(today, 'd', 59),
+        to: today,
+      },
+      {
+        text: 'Last 90 Days',
+        from: this.calendar.getPrev(today, 'd', 89),
+        to: today,
+      },
+      {
+        text: 'Last 120 Days',
+        from: this.calendar.getPrev(today, 'd', 119),
+        to: today,
+      },
+      {
+        text: 'This Month',
+        from: this.fromJSDate(moment().startOf('month').toDate()),
+        to: today,
+      },
+      {
+        text: 'Last Month',
+        from: this.fromJSDate(moment().subtract(1, 'month').startOf('month').toDate()),
+        to: this.fromJSDate(moment().subtract(1, 'month').endOf('month').toDate()),
+      },
+    ];
+  }
+
+  onDateSelection(date: NgbDate) {
+    if (!this.fromDate && !this.toDate) {
+      this.fromDate = date;
+    } else if (this.fromDate && !this.toDate && date.after(this.fromDate)) {
+      this.toDate = date;
+    } else {
+      this.toDate = null;
+      this.fromDate = date;
+    }
+  }
+
+  isHovered(date: NgbDate) {
+    return (
+      this.fromDate && !this.toDate && this.hoveredDate && date.after(this.fromDate) && date.before(this.hoveredDate)
+    );
+  }
+
+  isInside(date: NgbDate) {
+    return date.after(this.fromDate) && date.before(this.toDate);
+  }
+
+  isRange(date: NgbDate) {
+    return date.equals(this.fromDate) || date.equals(this.toDate) || this.isInside(date) || this.isHovered(date);
+  }
+
+  onRangeBtnClick(index: number) {
+    const selected: any = this.ranges[index];
+
+    if (!selected) {
+      return;
+    }
+
+    this.fromDate = selected.from;
+    this.toDate = selected.to;
+
+    this.apply();
+  }
+
+  format(date: NgbDate): string {
+    let result: string = null;
+    if (date) {
+      result = new DateFormatPipe().transform(this.toJSDate(date), 'D MMM YY');
+    }
+    return result;
+  }
+
+  unix(date: NgbDate) {
+    if (!date || !this.calendar.isValid(date)) {
+      return 0;
+    }
+
+    return this.toJSDate(date).getTime();
+  }
+
+  onDropDownChange(isOpen: boolean) {
+    // highlight range on open
+    if (isOpen) {
+      this.datepicker.navigateTo(this.fromDate);
+      this.datepicker.focus(); // force highlight redraw
+    }
+  }
+
+  setPlaceholderDate() {
+    if (this.fromDate == null || this.toDate == null) {
+      this.dropDownPlaceholder = this.placeholder;
+    } else {
+      this.dropDownPlaceholder = `${this.format(this.fromDate)} - ${this.format(this.toDate)}`;
+    }
+  }
+
+  apply() {
+    this.setPlaceholderDate();
+
+    const res = {
+      fromDate: this.unix(this.fromDate),
+      toDate: this.unix(this.toDate),
+    };
+
+    this.filter.emit(res);
+    this.dropDown.close();
+  }
+
+  clear() {
+    this.fromDate = null;
+    this.toDate = null;
+
+    this.apply();
+  }
+}

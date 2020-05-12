@@ -1,0 +1,161 @@
+/*** Custom Checkbox ***/
+.ae-checkbox {
+  position: relative;
+  input[type=checkbox] {
+    visibility: hidden;
+    opacity: 0;
+    &:checked+label {
+      &:before {
+        content: '';
+        border-color: $blue;
+        color: $blue;
+        background-color: $blue;
+      }
+      &:after {
+        opacity: 1;
+      }
+    }
+    &:disabled+label {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    +label {
+      cursor: pointer;
+      user-select: none;
+      &:before { // draw rectangle
+        content: '';
+        width: 20px;
+        height: 20px;
+        position: absolute;
+        left: 2px;
+        top: 4px;
+        border: 1px solid;
+        border-color: $gray-300;
+      }
+      &:after { // draw check
+        content: '';
+        width: 13px;
+        height: 8px;
+        border: 3px solid white;
+        position: absolute;
+        border-top: none;
+        border-right: none;
+        transform: rotate(-45deg);
+        top: 8px;
+        left: 6px;
+        opacity: 0;
+      }
+    }
+  }
+  label {
+    font-weight: 400;
+  }
+}
+/*** End of Custom Checkbox ***/
+
+/*** Custom Radio ***/
+@keyframes hover-color {
+  from {
+    border-color: $custom-radio-border-color;
+  }
+
+  to {
+    border-color: $custom-radio-main-color;
+  }
+}
+.ae-radio {
+  position: absolute;
+  display: none;
+}
+.ae-radio[disabled] {
+  cursor: not-allowed;
+}
+
+.ae-radio + label {
+  position: relative;
+  display: block;
+  padding-left: 34px;
+  cursor: pointer;
+  font-weight: 400;
+
+  &:hover {
+    &:before {
+      animation-duration: 0.4s;
+      animation-fill-mode: both;
+      animation-name: hover-color;
+    }
+  }
+  &:before {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: inline-block;
+    width: $custom-radio-size;
+    height: $custom-radio-size;
+    content: "";
+    border: 1px solid $custom-radio-border-color;
+  }
+  &:after {
+    position: absolute;
+    display: none;
+    content: "";
+  }
+}
+
+.ae-radio[disabled] + label {
+  cursor: not-allowed;
+  color: $custom-radio-disabled-color;
+  &:hover,
+  &:before,
+  &:after {
+    cursor: not-allowed;
+  }
+  &:hover {
+    &:before {
+      border: 1px solid $custom-radio-disabled-color;
+      animation-name: none;
+    }
+  }
+  &:before {
+    border-color: $custom-radio-disabled-color;
+  }
+}
+
+.ae-radio:checked + label {
+  &:before {
+    animation-name: none;
+  }
+  &:after {
+    display: block;
+  }
+}
+
+.ae-radio + label {
+  &:before {
+    border-radius: 50%;
+  }
+  &:after {
+    top: $custom-radio-dot-top-left;
+    left: $custom-radio-dot-top-left;
+    width: $custom-radio-dot-size;
+    height: $custom-radio-dot-size;
+    border-radius: 50%;
+    background: $custom-radio-main-color;
+  }
+}
+
+.ae-radio:checked + label {
+  &:before {
+    border: 1px solid $custom-radio-main-color;
+  }
+}
+.ae-radio:checked[disabled] + label {
+  &:before {
+    border: 1px solid $custom-radio-disabled-checked-color;
+  }
+  &:after {
+    background: $custom-radio-disabled-checked-color;
+  }
+}
+
+/*** End of Custom Radio ***/

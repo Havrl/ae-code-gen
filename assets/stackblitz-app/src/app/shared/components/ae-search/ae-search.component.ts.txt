@@ -1,0 +1,62 @@
+import { Component, OnInit, Input, Output, EventEmitter, ViewChild, ElementRef } from '@angular/core';
+import { FilterMetadata } from 'primeng/api';
+
+@Component({
+  selector: 'ae-search',
+  templateUrl: './ae-search.component.html'
+})
+export class AeSearchComponent implements OnInit {
+
+  @Input() disabled: boolean;
+  @Input() placeholder: string = 'Search...';
+  @Input() hasFilter: boolean;
+  @Input() customCss: object = null;
+
+  @Output() filter: EventEmitter<FilterMetadata> = new EventEmitter();
+
+  @ViewChild('searchField') searchField: ElementRef;
+
+  // default filter match mode (can be promoted to the param to enable customisation)
+  filterMatchMode: string = 'contains';
+  filterMetadata: FilterMetadata;
+
+  constructor() {
+    this.filterMetadata = <FilterMetadata>{ matchMode: this.filterMatchMode };
+  }
+
+  ngOnInit() {
+  }
+
+  applyFilter() {
+    this.filterMetadata.value = this.searchField.nativeElement.value;
+    this.filter.emit(this.filterMetadata);
+  }
+
+  resetFilter() {
+    this.searchField.nativeElement.value = '';
+    this.filterMetadata.value = '';
+    this.filter.emit(this.filterMetadata);
+  }
+
+  // KeyboardEvent.code values:
+  // https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/code/code_values
+
+  // KeyboardEvent.key values:
+  // https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key/Key_Values
+
+  onKeyup(event: any) {
+    switch (event.key) {
+      case 'Enter':
+        this.applyFilter();
+        break;
+      case 'Escape':
+      case 'Cancel':
+      case 'Delete':
+      case 'Backspace':
+      case 'Clear':
+         this.resetFilter();
+          break;
+    }
+  }
+
+}

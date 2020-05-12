@@ -1,0 +1,4 @@
+export interface DateFilterMetadata {
+  dateFrom: string | number;
+  dateTo: string | number;
+}

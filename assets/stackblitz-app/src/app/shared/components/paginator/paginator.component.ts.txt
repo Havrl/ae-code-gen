@@ -1,0 +1,143 @@
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { PaginatorPage } from '../../models/paginator-page.model';
+
+/**
+ * Paginatior component.
+ * This is based on the source of the prime-ng paginator.
+ *
+ * usage:
+ * <ae-paginator class="pull-right" [first]="pagingStart" [rows]="10" [totalRecords]="totalRecords" (pageChange)="paginate($event)">
+ * </ae-paginator>
+ */
+@Component({
+    selector: 'ae-paginator',
+    templateUrl: './paginator.component.html'
+})
+export class PaginatorComponent implements OnInit {
+
+    paginatorState: PaginatorPage;
+    pageLinkSize: number;
+    pageLinks: number[];
+    rangeStart: number;
+    rangeEnd: number;
+
+    private _totalRecords = 0;
+
+    @Output() pageChange: EventEmitter<PaginatorPage> = new EventEmitter();
+
+    @Input() first: number;
+    @Input() rows: number;
+
+    @Input()
+    set totalRecords(value: number) {
+        this._totalRecords = value;
+        this.updatePaginatorState();
+    }
+    get totalRecords() { return this._totalRecords; }
+
+
+    constructor() {
+        this.pageLinkSize = 5;
+    }
+
+    ngOnInit() {
+        this.updatePaginatorState();
+    }
+
+    isFirstPage() {
+        return this.getPage() === 0;
+    }
+
+    isLastPage() {
+        return this.getPage() === this.getPageCount() - 1;
+    }
+
+    getPageCount() {
+        return Math.ceil(this.totalRecords / this.rows) || 1;
+    }
+
+    changePage(p: number) {
+        const pc = this.getPageCount();
+        if (p >= 0 && p < pc) {
+            this.first = this.rows * p;
+            const state = {
+                page: p,
+                first: this.first,
+                rows: this.rows,
+                pageCount: pc
+            };
+            this.pageChange.emit(state);
+            this.updatePaginatorState();
+        }
+    }
+
+    getPage() {
+        return Math.floor(this.first / this.rows);
+    }
+
+    updateRange() {
+        const currentPage = this.getPage() + 1;
+        this.rangeStart = (currentPage - 1) * this.rows + 1;
+        this.rangeEnd = this.totalRecords;
+
+        if (this.rows < this.totalRecords) {
+            this.rangeEnd = this.rows * currentPage;
+            if (this.rangeEnd > this.totalRecords) {
+                this.rangeEnd = this.totalRecords;
+            }
+        }
+    }
+
+    changePageToFirst(event) {
+        if (!this.isFirstPage()) {
+            this.changePage(0);
+        }
+    }
+    changePageToPrev(event) {
+        this.changePage(this.getPage() - 1);
+    }
+    changePageToNext(event) {
+        this.changePage(this.getPage() + 1);
+    }
+    changePageToLast(event) {
+        if (!this.isLastPage()) {
+            this.changePage(this.getPageCount() - 1);
+        }
+    }
+    onPageLinkClick(event, page) {
+        this.changePage(page);
+    }
+    onRppChange(event) {
+        this.changePage(this.getPage());
+    }
+    updatePaginatorState() {
+        this.paginatorState = {
+            page: this.getPage(),
+            rows: this.rows,
+            first: this.first,
+            totalRecords: this.totalRecords
+        };
+
+        this.updateRange();
+    }
+
+    /* Helper method to provide a client side pagination
+     * for the provided list of items by retrieveing
+     * the next page based on the paginator state.
+     *
+     * @param event - PaginatorPage event
+     * @param list - target list to get a next page from
+     * @returns (array) - a page off the provided list.
+     */
+    getListNextPage(event: PaginatorPage, list: Array<any>) {
+
+      if (!list || list.length === 0) return list;
+
+      const pageIndex = event.first / event.rows;
+      const pageSize = event.rows;
+      const contentToSkip = pageIndex * pageSize;
+      const contentToTake = Math.min(this.totalRecords - contentToSkip, pageSize);
+
+      return list.slice(contentToSkip, contentToSkip + contentToTake);
+    }
+}
